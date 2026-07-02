@@ -79,20 +79,6 @@ const formatCurrency = (val: number) => {
 
 <template>
   <div class="wishlist-wrapper">
-    <!-- Header panel with user information -->
-    <div class="profile-summary-header animate-fade-in">
-      <div class="profile-details-box">
-        <img 
-          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&auto=format&fit=crop" 
-          alt="Alex Johnson" 
-          class="profile-main-avatar"
-        />
-        <div class="profile-meta">
-          <h2>Alex Johnson</h2>
-          <span class="user-role-badge">Admin User Profile</span>
-        </div>
-      </div>
-    </div>
 
     <!-- Wishlist list area -->
     <div class="wishlist-content-card card animate-fade-in-up">

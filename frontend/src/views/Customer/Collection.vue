@@ -670,7 +670,7 @@ const clearFilters = () => {
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--text-primary);
-  background: var(--accent-gradient);
+  background: rgba(0, 0, 0, 0.651);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
