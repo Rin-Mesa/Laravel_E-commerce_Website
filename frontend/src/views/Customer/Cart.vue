@@ -87,7 +87,7 @@ const formatCurrency = (val: number) =>
         <span class="text-neutral-700 font-semibold">Shopping Cart</span>
       </div>
 
-      <!-- ── Page Header ── -->
+      <!-- Page Header -->
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="text-2xl md:text-3xl font-bold text-neutral-900">Shopping Cart</h1>
@@ -101,7 +101,7 @@ const formatCurrency = (val: number) =>
         </router-link>
       </div>
 
-      <!-- ═══════════════════ EMPTY STATE ═══════════════════ -->
+      <!-- Empty State -->
       <div v-if="cart.length === 0" class="bg-white border border-neutral-200 rounded-2xl p-16 flex flex-col items-center text-center shadow-sm">
         <div class="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-5">
           <ShoppingCart :size="32" class="text-neutral-400" />
@@ -111,10 +111,10 @@ const formatCurrency = (val: number) =>
         <router-link to="/products" class="btn-primary px-8 py-3">Browse Products</router-link>
       </div>
 
-      <!-- ═══════════════════ CART LAYOUT ═══════════════════ -->
+      <!-- Cart Layout -->
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-        <!-- ── Left: Cart Items ── -->
+        <!-- Cart Items -->
         <div class="lg:col-span-2 flex flex-col gap-4">
 
           <!-- Free shipping banner -->
@@ -207,7 +207,7 @@ const formatCurrency = (val: number) =>
           </div>
         </div>
 
-        <!-- ── Right: Summary ── -->
+        <!-- Order Summary -->
         <div class="flex flex-col gap-4">
 
           <!-- Order Summary card -->
@@ -301,7 +301,7 @@ const formatCurrency = (val: number) =>
         </div>
       </div>
 
-      <!-- ═══════════════════ RECOMMENDED ═══════════════════ -->
+      <!-- Recommended Products -->
       <section v-if="recommendedProducts.length > 0" class="mt-14">
         <div class="flex items-center justify-between mb-5">
           <div>

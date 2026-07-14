@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Edit,
   Trash2,
-  Sparkles,
   TrendingUp,
   AlertCircle,
   History,
@@ -16,8 +15,6 @@ import {
   ChevronRight,
   Upload,
   X,
-  Check,
-  MoreHorizontal
 } from 'lucide-vue-next';
 
 // Component state
@@ -114,12 +111,6 @@ const lowStockCount = computed(() => {
 const outOfStockCount = computed(() => {
   return products.value.filter(p => p.stock === 0).length;
 });
-
-const getStockBadge = (stock: number) => {
-  if (stock === 0) return { label: 'Out of Stock', class: 'badge-danger', dot: 'red-dot' };
-  if (stock <= 15) return { label: `${stock} Low Stock`, class: 'badge-warning', dot: 'orange-dot' };
-  return { label: `${stock} In Stock`, class: 'badge-success', dot: 'green-dot' };
-};
 
 // Modal Operations
 const openAddModal = () => {
@@ -259,120 +250,120 @@ const handleBulkDelete = async () => {
 </script>
 
 <template>
-  <div class="products-wrapper">
-    <div class="products-header">
+  <div class="flex flex-col gap-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
       <div>
-        <h1 class="page-title">Product Inventory</h1>
-        <p class="page-subtitle">Manage store catalog, pricing, and stock levels</p>
+        <p class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Inventory</p>
+        <h1 class="text-2xl font-bold text-neutral-900">Product Inventory</h1>
+        <p class="text-sm text-neutral-500 mt-0.5">Manage store catalog, pricing, and stock levels</p>
+      </div>
+      <button class="btn-primary py-2.5 px-5 text-sm flex items-center gap-2" @click="openAddModal">
+        <Plus :size="16" />
+        New Product
+      </button>
+    </div>
+
+    <!-- Filters panel -->
+    <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm flex flex-wrap items-center gap-4">
+      <div class="relative flex-1 min-w-[240px]">
+        <Search :size="16" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+        <input type="text" placeholder="Search by ID, SKU, or name..." class="input-field pl-10 text-sm"
+          v-model="search" @input="currentPage = 1" />
       </div>
 
-      <div class="header-actions">
-        <button class="btn btn-primary" @click="openAddModal">
-          <Plus :size="16" />
-          New Product
+      <div class="flex items-center gap-2">
+        <label class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Category:</label>
+        <div class="relative">
+          <select class="input-field pr-8 text-sm appearance-none cursor-pointer" v-model="selectedCategory" @change="currentPage = 1">
+            <option value="all">All Categories</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id.toString()">
+              {{ cat.name }}
+            </option>
+          </select>
+          <ChevronDown :size="14" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+        </div>
+      </div>
+
+      <div v-if="selectedProducts.size > 0" class="flex items-center gap-3 pl-4 border-l border-neutral-200">
+        <span class="text-sm font-semibold text-neutral-500 font-mono">{{ selectedProducts.size }} selected</span>
+        <button class="btn-outlined text-xs py-2 px-3 text-red-600 border-red-300 hover:bg-red-50 flex items-center gap-1.5" @click="handleBulkDelete">
+          <Trash2 :size="13" />
+          Delete
         </button>
       </div>
     </div>
 
-    <!-- Filters panel -->
-    <div class="card filters-card animate-fade-in">
-      <div class="filters-row">
-        <div class="search-input-wrapper">
-          <Search :size="18" class="search-icon-inside" />
-          <input type="text" placeholder="Search by ID, SKU, or Product Name..." class="form-input search-input"
-            v-model="search" @input="currentPage = 1" />
-        </div>
-
-        <div class="filter-dropdown-wrapper">
-          <label>Filter by Category:</label>
-          <div class="select-wrapper">
-            <select class="form-input select-input" v-model="selectedCategory" @change="currentPage = 1">
-              <option value="all">All Categories</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id.toString()">
-                {{ cat.name }}
-              </option>
-            </select>
-            <ChevronDown :size="16" class="select-chevron" />
-          </div>
-        </div>
-
-        <div v-if="selectedProducts.size > 0" class="bulk-actions-wrapper">
-          <span class="selected-count">{{ selectedProducts.size }} selected</span>
-          <button class="btn btn-danger btn-sm" @click="handleBulkDelete">
-            <Trash2 :size="14" />
-            Delete Selected
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table content -->
-    <div class="card table-card animate-fade-in-up">
-      <div v-if="loading" class="loading-state">
-        <div class="loader"></div>
-        <p>Loading products catalog...</p>
+    <!-- Table -->
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-4 text-neutral-400">
+        <div class="w-10 h-10 border-4 border-neutral-200 border-t-primary-600 rounded-full animate-spin"></div>
+        <p class="text-sm">Loading products catalog...</p>
       </div>
 
-      <div v-else-if="filteredProducts.length === 0" class="empty-state">
-        <p>No products found matching your filters.</p>
-        <button class="btn btn-secondary btn-sm" @click="search = ''; selectedCategory = 'all'">
+      <div v-else-if="filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 gap-3 text-neutral-400">
+        <p class="text-sm text-neutral-500">No products found matching your filters.</p>
+        <button class="btn-secondary py-2 px-4 text-xs" @click="search = ''; selectedCategory = 'all'">
           Clear Filters
         </button>
       </div>
 
       <template v-else>
-        <div class="table-responsive">
-          <table class="data-table">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th style="width: 40px;">
-                  <input type="checkbox" :checked="selectAll" @change="toggleSelectAll" class="checkbox-input" />
+              <tr class="bg-neutral-50 border-b border-neutral-200">
+                <th class="p-4 text-left w-10">
+                  <input type="checkbox" :checked="selectAll" @change="toggleSelectAll" class="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
                 </th>
-                <th>Image</th>
-                <th>Name</th>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock Level</th>
-                <th style="text-align: right;">Actions</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Image</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Name</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">SKU</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Category</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Price</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Stock</th>
+                <th class="p-4 text-right font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="product in paginatedProducts" :key="product.id">
-                <td>
+              <tr v-for="product in paginatedProducts" :key="product.id" class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition-colors">
+                <td class="p-4">
                   <input type="checkbox" :checked="selectedProducts.has(product.id)"
-                    @change="toggleSelectProduct(product.id)" class="checkbox-input" />
+                    @change="toggleSelectProduct(product.id)" class="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
                 </td>
-                <td>
-                  <img :src="product.image_url" :alt="product.name" class="product-thumb"
+                <td class="p-4">
+                  <img :src="product.image_url" :alt="product.name" class="w-11 h-11 rounded-lg border border-neutral-200 object-cover bg-neutral-100"
                     @error="($event.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=256&auto=format&fit=crop'" />
                 </td>
-                <td style="font-weight: 600;">{{ product.name }}</td>
-                <td style="font-family: monospace; color: var(--text-secondary);">
-                  {{ product.sku || 'N/A' }}
+                <td class="p-4 font-semibold text-neutral-900">{{ product.name }}</td>
+                <td class="p-4 font-mono text-xs text-neutral-500">{{ product.sku || 'N/A' }}</td>
+                <td class="p-4">
+                  <span class="text-xs font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full">{{ product.category?.name }}</span>
                 </td>
-                <td>
-                  <span class="category-pill">{{ product.category?.name }}</span>
-                </td>
-                <td style="font-weight: 700; color: var(--accent-primary);">
+                <td class="p-4 font-bold text-primary-600">
                   {{ new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price) }}
                 </td>
-                <td>
-                  <div class="stock-cell">
-                    <span :class="['stock-dot', getStockBadge(product.stock).dot]"></span>
-                    <span :class="['badge', getStockBadge(product.stock).class]">
-                      {{ getStockBadge(product.stock).label }}
-                    </span>
-                  </div>
+                <td class="p-4">
+                  <span v-if="product.stock === 0" class="inline-flex items-center gap-1.5 text-xs font-semibold bg-red-50 text-red-600 px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    Out of Stock
+                  </span>
+                  <span v-else-if="product.stock <= 15" class="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    {{ product.stock }} Low
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1.5 text-xs font-semibold bg-secondary-50 text-secondary-600 px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-secondary-500"></span>
+                    {{ product.stock }} In Stock
+                  </span>
                 </td>
-                <td style="text-align: right;">
-                  <div class="actions-group">
-                    <button class="action-btn edit-btn" @click="openEditModal(product)" title="Edit">
-                      <Edit :size="16" />
+                <td class="p-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 hover:text-primary-600 transition-all" @click="openEditModal(product)" title="Edit">
+                      <Edit :size="15" />
                     </button>
-                    <button class="action-btn delete-btn" @click="handleDeleteProduct(product.id, product.name)"
-                      title="Delete">
-                      <Trash2 :size="16" />
+                    <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-red-50 hover:text-red-600 transition-all" @click="handleDeleteProduct(product.id, product.name)" title="Delete">
+                      <Trash2 :size="15" />
                     </button>
                   </div>
                 </td>
@@ -381,146 +372,133 @@ const handleBulkDelete = async () => {
           </table>
         </div>
 
-        <!-- Pagination Pager -->
-        <div class="pagination-row">
-          <span class="pagination-info">
-            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-            {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} of
-            {{ filteredProducts.length }} products
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-4 py-4 border-t border-neutral-100 bg-neutral-50/50">
+          <span class="text-xs text-neutral-500 font-mono">
+            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} of {{ filteredProducts.length }}
           </span>
-
-          <div class="pager-buttons">
-            <button class="pager-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
-              <ChevronLeft :size="16" />
+          <div class="flex items-center gap-1">
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+              <ChevronLeft :size="15" />
             </button>
-
-            <button v-for="p in totalPages" :key="p" :class="['pager-btn', { active: currentPage === p }]"
+            <button v-for="p in totalPages" :key="p" 
+              :class="['w-8 h-8 rounded-lg text-xs font-semibold border transition-all', 
+                currentPage === p ? 'bg-primary-600 text-white border-primary-600' : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100']"
               @click="changePage(p)">
               {{ p }}
             </button>
-
-            <button class="pager-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
-              <ChevronRight :size="16" />
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+              <ChevronRight :size="15" />
             </button>
           </div>
         </div>
       </template>
     </div>
 
-    <!-- Metrics panel below table -->
-    <div class="metrics-cards-grid animate-fade-in-up">
-      <div class="card metric-mini-card">
-        <div class="metric-icon-box" style="color: #2563eb; background-color: rgba(37, 99, 235, 0.1);">
+    <!-- Metrics cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white border border-neutral-200 rounded-xl p-4 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600 shrink-0">
           <TrendingUp :size="18" />
         </div>
-        <div class="metric-mini-info">
-          <h4>Stock Trend</h4>
-          <p>Inventory turnover increased by 12% this week. Consider restocking high-performing items.</p>
+        <div>
+          <h4 class="font-semibold text-sm text-neutral-900">Stock Trend</h4>
+          <p class="text-xs text-neutral-500 mt-1 leading-relaxed">Inventory turnover increased by 12% this week. Consider restocking high-performing items.</p>
         </div>
       </div>
 
-      <div class="card metric-mini-card">
-        <div class="metric-icon-box" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);">
+      <div class="bg-white border border-neutral-200 rounded-xl p-4 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
           <AlertCircle :size="18" />
         </div>
-        <div class="metric-mini-info">
-          <h4>Low Stock Alert</h4>
-          <p>{{ lowStockCount + outOfStockCount }} items are currently below safety threshold. Re-order recommended
-            immediately.</p>
+        <div>
+          <h4 class="font-semibold text-sm text-neutral-900">Low Stock Alert</h4>
+          <p class="text-xs text-neutral-500 mt-1 leading-relaxed">{{ lowStockCount + outOfStockCount }} items are currently below safety threshold. Re-order recommended immediately.</p>
         </div>
       </div>
 
-      <div class="card metric-mini-card">
-        <div class="metric-icon-box" style="color: #6b7280; background-color: rgba(107, 114, 128, 0.1);">
+      <div class="bg-white border border-neutral-200 rounded-xl p-4 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 shrink-0">
           <History :size="18" />
         </div>
-        <div class="metric-mini-info">
-          <h4>Recent Activity</h4>
-          <p>Admin user updated the 'Sonic Aura Elite' pricing details 14 minutes ago.</p>
+        <div>
+          <h4 class="font-semibold text-sm text-neutral-900">Recent Activity</h4>
+          <p class="text-xs text-neutral-500 mt-1 leading-relaxed">Admin user updated the 'Sonic Aura Elite' pricing details 14 minutes ago.</p>
         </div>
       </div>
     </div>
 
     <!-- ADD/EDIT PRODUCT MODAL -->
-    <div v-if="isModalOpen" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>{{ isEditing ? 'Edit Product' : 'Add New Product' }}</h3>
-          <button class="close-btn" @click="isModalOpen = false">
-            <X :size="20" />
+    <div v-if="isModalOpen" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" @click.self="isModalOpen = false">
+      <div class="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fade-in-up overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <h3 class="font-bold text-lg text-neutral-900">{{ isEditing ? 'Edit Product' : 'Add New Product' }}</h3>
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all" @click="isModalOpen = false">
+            <X :size="18" />
           </button>
         </div>
 
-        <form @submit.prevent="handleSaveProduct" class="modal-form">
-          <div class="modal-form-grid">
-            <div class="form-group span-2">
-              <label for="p-name">Product Name *</label>
-              <input id="p-name" type="text" class="form-input" v-model="formName" required />
+        <form @submit.prevent="handleSaveProduct" class="p-6 overflow-y-auto flex-1">
+          <div class="grid grid-cols-2 gap-5">
+            <div class="col-span-2 flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Product Name *</label>
+              <input id="p-name" type="text" class="input-field" v-model="formName" required />
             </div>
 
-            <div class="form-group">
-              <label for="p-sku">SKU (Stock Keeping Unit)</label>
-              <input id="p-sku" type="text" class="form-input" v-model="formSku" placeholder="ST-APX-01" />
+            <div class="flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">SKU</label>
+              <input id="p-sku" type="text" class="input-field" v-model="formSku" placeholder="ST-APX-01" />
             </div>
 
-            <div class="form-group">
-              <label for="p-cat">Category *</label>
-              <div class="select-wrapper">
-                <select id="p-cat" class="form-input select-input" v-model="formCategoryId" required>
-                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
-                  </option>
+            <div class="flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Category *</label>
+              <div class="relative">
+                <select id="p-cat" class="input-field pr-8 appearance-none cursor-pointer" v-model="formCategoryId" required>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
-                <ChevronDown :size="16" class="select-chevron" />
+                <ChevronDown :size="14" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="p-price">Price ($) *</label>
-              <input id="p-price" type="number" step="0.01" min="0" class="form-input" v-model="formPrice" required />
+            <div class="flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Price ($) *</label>
+              <input id="p-price" type="number" step="0.01" min="0" class="input-field" v-model="formPrice" required />
             </div>
 
-            <div class="form-group">
-              <label for="p-stock">Stock Level *</label>
-              <input id="p-stock" type="number" min="0" class="form-input" v-model="formStock" required />
+            <div class="flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Stock Level *</label>
+              <input id="p-stock" type="number" min="0" class="input-field" v-model="formStock" required />
             </div>
 
-            <div class="form-group span-2">
-              <label for="p-desc">Description</label>
-              <textarea id="p-desc" class="form-input" style="height: 100px; resize: vertical;"
-                v-model="formDescription"></textarea>
+            <div class="col-span-2 flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Description</label>
+              <textarea id="p-desc" class="input-field min-h-[90px] resize-y" v-model="formDescription"></textarea>
             </div>
 
             <!-- Image upload -->
-            <div class="form-group span-2">
-              <label>Product Image</label>
-              <div class="image-upload-zone">
-                <input type="file" id="p-image-file" accept="image/*" class="hidden-file-input"
-                  @change="handleFileChange" />
+            <div class="col-span-2 flex flex-col gap-1.5">
+              <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Product Image</label>
+              <div class="relative">
+                <input type="file" id="p-image-file" accept="image/*" class="hidden" @change="handleFileChange" />
 
-                <div v-if="formImagePreview" class="image-preview-box">
-                  <img :src="formImagePreview" class="preview-img" />
-                  <button type="button" class="remove-preview-btn"
-                    @click="formImageFile = null; formImagePreview = null">
+                <div v-if="formImagePreview" class="flex items-center gap-4 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                  <img :src="formImagePreview" class="w-20 h-20 object-cover rounded-lg border border-neutral-200" />
+                  <button type="button" class="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors" @click="formImageFile = null; formImagePreview = null">
                     Remove
                   </button>
                 </div>
-                <label v-else for="p-image-file" class="upload-placeholder">
-                  <Upload :size="24" />
-                  <span>Click to upload product image</span>
-                  <span class="sub text-secondary">PNG, JPG or GIF up to 2MB</span>
+                <label v-else for="p-image-file" class="flex flex-col items-center justify-center gap-1.5 h-24 border-2 border-dashed border-neutral-200 rounded-lg cursor-pointer hover:border-primary-400 bg-neutral-50/50 transition-colors">
+                  <Upload :size="20" class="text-neutral-400" />
+                  <span class="text-xs font-medium text-neutral-500">Click to upload image</span>
+                  <span class="text-[10px] text-neutral-400">PNG, JPG up to 2MB</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="isModalOpen = false">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              Save Product
-            </button>
+          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-neutral-100">
+            <button type="button" class="btn-secondary py-2.5 px-5 text-sm" @click="isModalOpen = false">Cancel</button>
+            <button type="submit" class="btn-primary py-2.5 px-5 text-sm">Save Product</button>
           </div>
         </form>
       </div>
@@ -529,455 +507,6 @@ const handleBulkDelete = async () => {
 </template>
 
 <style scoped>
-.products-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  font-family: var(--font-body);
-}
-
-.products-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-@media (max-width: 640px) {
-  .products-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.spark-icon {
-  animation: pulseGlow 2s infinite ease-in-out;
-}
-
-.page-title {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-/* Filters Card */
-.filters-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.search-input-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 300px;
-}
-
-.search-icon-inside {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-}
-
-.search-input {
-  padding-left: 44px;
-}
-
-.filter-dropdown-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.filter-dropdown-wrapper label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.select-wrapper {
-  position: relative;
-  width: 200px;
-}
-
-.select-input {
-  appearance: none;
-  padding-right: 36px;
-  cursor: pointer;
-}
-
-.select-chevron {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-.bulk-actions-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-left: 24px;
-  border-left: 1px solid var(--border-color);
-}
-
-.selected-count {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.checkbox-input {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #2563eb;
-}
-
-/* Table Card */
-.product-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-.category-pill {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background-color: var(--bg-tertiary);
-  padding: 4px 10px;
-  border-radius: 50px;
-}
-
-.stock-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stock-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.green-dot {
-  background-color: var(--success);
-}
-
-.orange-dot {
-  background-color: var(--warning);
-}
-
-.red-dot {
-  background-color: var(--danger);
-}
-
-.actions-group {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.action-btn {
-  background: none;
-  border: 1px solid var(--border-color);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.action-btn:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.edit-btn:hover {
-  color: var(--accent-secondary);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.delete-btn:hover {
-  color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.pagination-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 20px;
-  padding: 0 4px;
-}
-
-.pagination-info {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.pager-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.pager-btn {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all var(--transition-fast);
-}
-
-.pager-btn:hover:not(:disabled) {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.pager-btn.active {
-  background-color: #2563eb;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.pager-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Metrics Mini Cards */
-.metrics-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-.metric-mini-card {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.metric-icon-box {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.metric-mini-info h4 {
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.metric-mini-info p {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-/* Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.modal-card {
-  background: #3b82f6;
-  color: white;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  width: 580px;
-  max-width: 100%;
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  animation: fadeInUp var(--transition-normal);
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.modal-form {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.span-2 {
-  grid-column: span 2;
-}
-
-.hidden-file-input {
-  display: none;
-}
-
-.modal-form-grid .form-input,
-.modal-form-grid .image-upload-zone {
-  background-color: rgba(102, 96, 96, 0.419);
-}
-
-.image-upload-zone {
-  border: 2px dashed var(--border-color);
-  border-radius: var(--radius-md);
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background-color: var(--bg-tertiary);
-  transition: border-color var(--transition-fast);
-  overflow: hidden;
-}
-
-.image-upload-zone:hover {
-  border-color: var(--accent-secondary);
-}
-
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.upload-placeholder span {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.upload-placeholder .sub {
-  font-size: 0.7rem;
-}
-
-.image-preview-box {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px;
-  width: 100%;
-  height: 100%;
-}
-
-.preview-img {
-  height: 100%;
-  width: 90px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-}
-
-.remove-preview-btn {
-  background-color: var(--danger-light);
-  color: var(--danger);
-  border: none;
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background-color: var(--bg-tertiary);
-}
-
-.loading-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 0;
-  gap: 16px;
-  color: var(--text-secondary);
-}
+/* No custom CSS needed - all styles use Tailwind utility classes */
 </style>
+

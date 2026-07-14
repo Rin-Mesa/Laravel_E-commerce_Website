@@ -7,17 +7,13 @@ import {
   Search,
   ChevronDown,
   Eye,
-  Truck,
   XCircle,
   CheckCircle,
   Clock,
   ChevronLeft,
   ChevronRight,
   Download,
-  Filter,
-  Calendar,
   DollarSign,
-  User as UserIcon,
   X,
   Package
 } from 'lucide-vue-next';
@@ -107,13 +103,13 @@ const cancelledCount = computed(() => {
 });
 
 const getStatusBadge = (status: string) => {
-  const statusMap: Record<string, { label: string; class: string; icon: any }> = {
-    pending: { label: 'Pending', class: 'badge-warning', icon: Clock },
-    processing: { label: 'Processing', class: 'badge-info', icon: Package },
-    completed: { label: 'Completed', class: 'badge-success', icon: CheckCircle },
-    cancelled: { label: 'Cancelled', class: 'badge-danger', icon: XCircle }
+  const statusMap: Record<string, { label: string; icon: any }> = {
+    pending: { label: 'Pending', icon: Clock },
+    processing: { label: 'Processing', icon: Package },
+    completed: { label: 'Completed', icon: CheckCircle },
+    cancelled: { label: 'Cancelled', icon: XCircle }
   };
-  return statusMap[status] || { label: status, class: 'badge-info', icon: Clock };
+  return statusMap[status] || { label: status, icon: Clock };
 };
 
 const formatCurrency = (val: number) => {
@@ -166,78 +162,90 @@ const handleCreateOrder = () => {
 </script>
 
 <template>
-  <div class="orders-wrapper">
-    <div class="orders-header">
+  <div class="flex flex-col gap-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
       <div>
-        <h1 class="page-title">Order Management</h1>
-        <p class="page-subtitle">Track and manage customer orders</p>
+        <p class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Sales</p>
+        <h1 class="text-2xl font-bold text-neutral-900">Order Management</h1>
+        <p class="text-sm text-neutral-500 mt-0.5">Track and manage customer orders</p>
       </div>
-
-      <div class="header-actions">
-        <button class="btn btn-outline btn-sm" @click="handleExport">
-          <Download :size="16" />
+      <div class="flex items-center gap-2">
+        <button class="btn-outlined py-2 px-4 text-xs flex items-center gap-1.5" @click="handleExport">
+          <Download :size="14" />
           Export
         </button>
-        <button class="btn btn-primary" @click="handleCreateOrder">
-          <Plus :size="16" />
+        <button class="btn-primary py-2 px-4 text-sm flex items-center gap-2" @click="handleCreateOrder">
+          <Plus :size="15" />
           Create Order
         </button>
       </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid animate-fade-in">
-      <div class="card stat-card">
-        <div class="stat-info">
-          <span class="stat-label">Today's Revenue</span>
-          <span class="stat-value">{{ formatCurrency(todayRevenue) }}</span>
-        </div>
-        <div class="stat-icon-wrapper" style="color: #2563eb; background-color: rgba(37, 99, 235, 0.1);">
-          <DollarSign :size="20" />
-        </div>
-      </div>
-
-      <div class="card stat-card">
-        <div class="stat-info">
-          <span class="stat-label">Pending</span>
-          <span class="stat-value">{{ pendingCount }}</span>
-        </div>
-        <div class="stat-icon-wrapper" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);">
-          <Clock :size="20" />
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">Today's Revenue</p>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ formatCurrency(todayRevenue) }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600">
+            <DollarSign :size="18" />
+          </div>
         </div>
       </div>
 
-      <div class="card stat-card">
-        <div class="stat-info">
-          <span class="stat-label">Processing</span>
-          <span class="stat-value">{{ processingCount }}</span>
-        </div>
-        <div class="stat-icon-wrapper" style="color: #3b82f6; background-color: rgba(59, 130, 246, 0.1);">
-          <Package :size="20" />
+      <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">Pending</p>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ pendingCount }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <Clock :size="18" />
+          </div>
         </div>
       </div>
 
-      <div class="card stat-card">
-        <div class="stat-info">
-          <span class="stat-label">Completed</span>
-          <span class="stat-value">{{ completedCount }}</span>
+      <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">Processing</p>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ processingCount }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600">
+            <Package :size="18" />
+          </div>
         </div>
-        <div class="stat-icon-wrapper" style="color: #10b981; background-color: rgba(16, 185, 129, 0.1);">
-          <CheckCircle :size="20" />
+      </div>
+
+      <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">Completed</p>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ completedCount }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-secondary-50 flex items-center justify-center text-secondary-600">
+            <CheckCircle :size="18" />
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Status Filter Tabs -->
-    <div class="status-tabs animate-fade-in">
+    <div class="flex items-center gap-2 flex-wrap">
       <button 
         v-for="status in ['all', 'pending', 'processing', 'completed', 'cancelled']"
         :key="status"
-        :class="['status-tab', { active: statusFilter === status }]"
+        :class="['px-4 py-2 rounded-lg text-sm font-semibold transition-all', 
+          statusFilter === status 
+            ? 'bg-primary-600 text-white shadow-sm' 
+            : 'bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700']"
         @click="statusFilter = status; currentPage = 1"
       >
         {{ status.charAt(0).toUpperCase() + status.slice(1) }}
-        <span v-if="status !== 'all'" class="tab-count">
+        <span v-if="status !== 'all'" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono" :class="statusFilter === status ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'">
           {{ status === 'pending' ? pendingCount : 
              status === 'processing' ? processingCount :
              status === 'completed' ? completedCount : cancelledCount }}
@@ -246,91 +254,85 @@ const handleCreateOrder = () => {
     </div>
 
     <!-- Filters panel -->
-    <div class="card filters-card animate-fade-in">
-      <div class="filters-row">
-        <div class="search-input-wrapper">
-          <Search :size="18" class="search-icon-inside" />
-          <input type="text" placeholder="Search by Order ID, Customer Name, or Email..." class="form-input search-input"
-            v-model="search" @input="currentPage = 1" />
-        </div>
+    <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm flex flex-wrap items-center gap-4">
+      <div class="relative flex-1 min-w-[240px]">
+        <Search :size="16" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+        <input type="text" placeholder="Search by Order ID, Customer Name, or Email..." class="input-field pl-10 text-sm"
+          v-model="search" @input="currentPage = 1" />
+      </div>
 
-        <div class="filter-dropdown-wrapper">
-          <label>Date Range:</label>
-          <div class="select-wrapper">
-            <select class="form-input select-input">
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
-            <ChevronDown :size="16" class="select-chevron" />
-          </div>
+      <div class="flex items-center gap-2">
+        <label class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date Range:</label>
+        <div class="relative">
+          <select class="input-field pr-8 text-sm appearance-none cursor-pointer">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+          <ChevronDown :size="14" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
         </div>
       </div>
     </div>
 
-    <!-- Table content -->
-    <div class="card table-card animate-fade-in-up">
-      <div v-if="loading" class="loading-state">
-        <div class="loader"></div>
-        <p>Loading orders...</p>
+    <!-- Table -->
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-4 text-neutral-400">
+        <div class="w-10 h-10 border-4 border-neutral-200 border-t-primary-600 rounded-full animate-spin"></div>
+        <p class="text-sm">Loading orders...</p>
       </div>
 
-      <div v-else-if="filteredOrders.length === 0" class="empty-state">
-        <Package :size="48" style="color: var(--text-tertiary); margin-bottom: 16px;" />
-        <p>No orders found matching your filters.</p>
-        <button class="btn btn-secondary btn-sm" @click="search = ''; statusFilter = 'all'">
+      <div v-else-if="filteredOrders.length === 0" class="flex flex-col items-center justify-center py-20 gap-3 text-neutral-400">
+        <Package :size="40" class="text-neutral-300" />
+        <p class="text-sm text-neutral-500">No orders found matching your filters.</p>
+        <button class="btn-secondary py-2 px-4 text-xs" @click="search = ''; statusFilter = 'all'">
           Clear Filters
         </button>
       </div>
 
       <template v-else>
-        <div class="table-responsive">
-          <table class="data-table">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Items Count</th>
-                <th>Total Price</th>
-                <th>Order Date</th>
-                <th>Status</th>
-                <th style="text-align: right;">Actions</th>
+              <tr class="bg-neutral-50 border-b border-neutral-200">
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Order ID</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Customer</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Items</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Total</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Date</th>
+                <th class="p-4 text-left font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Status</th>
+                <th class="p-4 text-right font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="order in paginatedOrders" :key="order.id">
-                <td style="font-weight: 700;">#ORD-{{ order.id }}</td>
-                <td>
-                  <div class="customer-cell">
-                    <span class="customer-avatar-initials">
+              <tr v-for="order in paginatedOrders" :key="order.id" class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition-colors">
+                <td class="p-4 font-bold text-neutral-900 font-mono text-xs">#ORD-{{ order.id }}</td>
+                <td class="p-4">
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-bold text-xs flex items-center justify-center border border-primary-100 shrink-0">
                       {{ order.customer_name ? order.customer_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'CU' }}
                     </span>
-                    <div class="customer-info">
-                      <span class="customer-name">{{ order.customer_name || 'Unknown' }}</span>
-                      <span class="customer-email">{{ order.customer_email || '' }}</span>
+                    <div>
+                      <p class="font-semibold text-neutral-900 text-sm leading-tight">{{ order.customer_name || 'Unknown' }}</p>
+                      <p class="text-xs text-neutral-500">{{ order.customer_email || '' }}</p>
                     </div>
                   </div>
                 </td>
-                <td>
-                  <span class="items-count-badge">{{ order.items_count || 0 }} items</span>
+                <td class="p-4">
+                  <span class="text-xs font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full">{{ order.items_count || 0 }} items</span>
                 </td>
-                <td style="font-weight: 700; color: var(--accent-primary);">
-                  {{ formatCurrency(order.total || 0) }}
-                </td>
-                <td style="color: var(--text-secondary);">
-                  {{ formatDate(order.created_at) }}
-                </td>
-                <td>
-                  <span :class="['badge', getStatusBadge(order.status).class]">
-                    <component :is="getStatusBadge(order.status).icon" :size="12" style="margin-right: 4px;" />
+                <td class="p-4 font-bold text-primary-600">{{ formatCurrency(order.total || 0) }}</td>
+                <td class="p-4 text-neutral-500 text-xs">{{ formatDate(order.created_at) }}</td>
+                <td class="p-4">
+                  <span :class="'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ' + (order.status === 'pending' ? 'bg-amber-50 text-amber-600' : order.status === 'processing' ? 'bg-primary-50 text-primary-600' : order.status === 'completed' ? 'bg-secondary-50 text-secondary-600' : order.status === 'cancelled' ? 'bg-red-50 text-red-600' : 'bg-neutral-100 text-neutral-600')">
+                    <component :is="getStatusBadge(order.status).icon" :size="12" />
                     {{ getStatusBadge(order.status).label }}
                   </span>
                 </td>
-                <td style="text-align: right;">
-                  <div class="actions-group">
-                    <button class="action-btn view-btn" @click="openViewModal(order)" title="View Details">
-                      <Eye :size="16" />
+                <td class="p-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 hover:text-primary-600 transition-all" @click="openViewModal(order)" title="View Details">
+                      <Eye :size="15" />
                     </button>
                   </div>
                 </td>
@@ -339,26 +341,23 @@ const handleCreateOrder = () => {
           </table>
         </div>
 
-        <!-- Pagination Pager -->
-        <div class="pagination-row">
-          <span class="pagination-info">
-            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-            {{ Math.min(currentPage * itemsPerPage, filteredOrders.length) }} of
-            {{ filteredOrders.length }} orders
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-4 py-4 border-t border-neutral-100 bg-neutral-50/50">
+          <span class="text-xs text-neutral-500 font-mono">
+            Showing {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, filteredOrders.length) }} of {{ filteredOrders.length }}
           </span>
-
-          <div class="pager-buttons">
-            <button class="pager-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
-              <ChevronLeft :size="16" />
+          <div class="flex items-center gap-1">
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+              <ChevronLeft :size="15" />
             </button>
-
-            <button v-for="p in totalPages" :key="p" :class="['pager-btn', { active: currentPage === p }]"
+            <button v-for="p in totalPages" :key="p" 
+              :class="['w-8 h-8 rounded-lg text-xs font-semibold border transition-all', 
+                currentPage === p ? 'bg-primary-600 text-white border-primary-600' : 'border-neutral-200 text-neutral-500 hover:bg-neutral-100']"
               @click="changePage(p)">
               {{ p }}
             </button>
-
-            <button class="pager-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
-              <ChevronRight :size="16" />
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+              <ChevronRight :size="15" />
             </button>
           </div>
         </div>
@@ -366,510 +365,73 @@ const handleCreateOrder = () => {
     </div>
 
     <!-- ORDER DETAILS MODAL -->
-    <div v-if="isModalOpen && selectedOrder" class="modal-overlay">
-      <div class="modal-card modal-large">
-        <div class="modal-header">
-          <h3>Order Details #ORD-{{ selectedOrder.id }}</h3>
-          <button class="close-btn" @click="isModalOpen = false">
-            <X :size="20" />
+    <div v-if="isModalOpen && selectedOrder" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" @click.self="isModalOpen = false">
+      <div class="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fade-in-up overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <h3 class="font-bold text-lg text-neutral-900">Order Details #ORD-{{ selectedOrder.id }}</h3>
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all" @click="isModalOpen = false">
+            <X :size="18" />
           </button>
         </div>
 
-        <div class="modal-body">
-          <div class="order-details-grid">
+        <div class="p-6 overflow-y-auto flex-1 space-y-6">
+          <div class="grid grid-cols-2 gap-4">
             <!-- Customer Info -->
-            <div class="detail-section">
-              <h4>Customer Information</h4>
-              <div class="detail-row">
-                <span class="detail-label">Name:</span>
-                <span class="detail-value">{{ selectedOrder.customer_name || 'N/A' }}</span>
+            <div class="flex flex-col gap-3 bg-neutral-50 rounded-xl p-4">
+              <h4 class="font-bold text-sm text-neutral-900">Customer Information</h4>
+              <div class="flex justify-between text-sm">
+                <span class="text-neutral-500">Name:</span>
+                <span class="font-semibold text-neutral-900">{{ selectedOrder.customer_name || 'N/A' }}</span>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Email:</span>
-                <span class="detail-value">{{ selectedOrder.customer_email || 'N/A' }}</span>
+              <div class="flex justify-between text-sm">
+                <span class="text-neutral-500">Email:</span>
+                <span class="font-semibold text-neutral-900">{{ selectedOrder.customer_email || 'N/A' }}</span>
               </div>
             </div>
 
             <!-- Order Info -->
-            <div class="detail-section">
-              <h4>Order Information</h4>
-              <div class="detail-row">
-                <span class="detail-label">Order Date:</span>
-                <span class="detail-value">{{ formatDate(selectedOrder.created_at) }}</span>
+            <div class="flex flex-col gap-3 bg-neutral-50 rounded-xl p-4">
+              <h4 class="font-bold text-sm text-neutral-900">Order Information</h4>
+              <div class="flex justify-between text-sm">
+                <span class="text-neutral-500">Date:</span>
+                <span class="font-semibold text-neutral-900">{{ formatDate(selectedOrder.created_at) }}</span>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Total Amount:</span>
-                <span class="detail-value" style="font-weight: 700; color: var(--accent-primary);">
-                  {{ formatCurrency(selectedOrder.total || 0) }}
-                </span>
+              <div class="flex justify-between text-sm">
+                <span class="text-neutral-500">Amount:</span>
+                <span class="font-bold text-primary-600">{{ formatCurrency(selectedOrder.total || 0) }}</span>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Items:</span>
-                <span class="detail-value">{{ selectedOrder.items_count || 0 }} items</span>
+              <div class="flex justify-between text-sm">
+                <span class="text-neutral-500">Items:</span>
+                <span class="font-semibold text-neutral-900">{{ selectedOrder.items_count || 0 }}</span>
               </div>
             </div>
+          </div>
 
-            <!-- Status Update -->
-            <div class="detail-section full-width">
-              <h4>Update Status</h4>
-              <div class="status-actions">
-                <button 
-                  v-for="status in ['pending', 'processing', 'completed', 'cancelled']"
-                  :key="status"
-                  :class="['status-action-btn', { active: selectedOrder.status === status }]"
-                  @click="updateOrderStatus(selectedOrder.id, status)"
-                >
-                  <component :is="getStatusBadge(status).icon" :size="16" />
-                  {{ status.charAt(0).toUpperCase() + status.slice(1) }}
-                </button>
-              </div>
+          <!-- Status Update -->
+          <div class="flex flex-col gap-3">
+            <h4 class="font-bold text-sm text-neutral-900">Update Status</h4>
+            <div class="flex gap-2 flex-wrap">
+              <button 
+                v-for="status in ['pending', 'processing', 'completed', 'cancelled']"
+                :key="status"
+                :class="['px-4 py-2 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all',
+                  selectedOrder.status === status
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50']"
+                @click="updateOrderStatus(selectedOrder.id, status)"
+              >
+                <component :is="getStatusBadge(status).icon" :size="13" />
+                {{ status.charAt(0).toUpperCase() + status.slice(1) }}
+              </button>
             </div>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="isModalOpen = false">
-            Close
-          </button>
+        <div class="flex items-center justify-end px-6 py-4 border-t border-neutral-100 bg-neutral-50">
+          <button type="button" class="btn-secondary py-2.5 px-5 text-sm" @click="isModalOpen = false">Close</button>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.orders-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  font-family: var(--font-body);
-}
-
-.orders-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.page-title {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-/* Status Tabs */
-.status-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.status-tab {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 10px 20px;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-tab:hover {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.status-tab.active {
-  background-color: #2563eb;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.tab-count {
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 50px;
-  font-size: 0.75rem;
-}
-
-/* Filters Card */
-.filters-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.search-input-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 300px;
-}
-
-.search-icon-inside {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-}
-
-.search-input {
-  padding-left: 44px;
-}
-
-.filter-dropdown-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.filter-dropdown-wrapper label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.select-wrapper {
-  position: relative;
-  width: 180px;
-}
-
-.select-input {
-  appearance: none;
-  padding-right: 36px;
-  cursor: pointer;
-}
-
-.select-chevron {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-/* Table Card */
-.customer-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.customer-avatar-initials {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #dbeafe, #eff6ff);
-  color: #2563eb;
-  font-weight: 700;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #bfdbfe;
-  flex-shrink: 0;
-}
-
-.customer-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.customer-name {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.customer-email {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.items-count-badge {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background-color: var(--bg-tertiary);
-  padding: 4px 10px;
-  border-radius: 50px;
-}
-
-.actions-group {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.action-btn {
-  background: none;
-  border: 1px solid var(--border-color);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.action-btn:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.view-btn:hover {
-  color: var(--accent-secondary);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.pagination-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 20px;
-  padding: 0 4px;
-}
-
-.pagination-info {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.pager-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.pager-btn {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all var(--transition-fast);
-}
-
-.pager-btn:hover:not(:disabled) {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.pager-btn.active {
-  background-color: #2563eb;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.pager-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.modal-card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  width: 580px;
-  max-width: 100%;
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  animation: fadeInUp var(--transition-normal);
-  overflow: hidden;
-}
-
-.modal-large {
-  width: 700px;
-}
-
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.order-details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.detail-section {
-  background-color: var(--bg-tertiary);
-  padding: 16px;
-  border-radius: var(--radius-md);
-}
-
-.detail-section.full-width {
-  grid-column: span 2;
-}
-
-.detail-section h4 {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.detail-value {
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.status-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.status-action-btn {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-action-btn:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.status-action-btn.active {
-  background-color: #2563eb;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background-color: var(--bg-tertiary);
-}
-
-.loading-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 0;
-  gap: 16px;
-  color: var(--text-secondary);
-}
-
-.loading-state p,
-.empty-state p {
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.loader {
-  width: 48px;
-  height: 48px;
-  border: 4px solid var(--border-color);
-  border-top-color: var(--accent-secondary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-</style>

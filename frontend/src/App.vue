@@ -210,11 +210,6 @@ const handleSearchKeyPress = (e: KeyboardEvent) => {
           </div>
           
           <div class="flex items-center gap-3">
-            <div class="relative hidden sm:block w-60 lg:w-72">
-              <Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-              <input type="text" v-model="searchQuery" @keypress="handleSearchKeyPress" placeholder="Search products..." class="search-field text-sm py-2" />
-            </div>
-            
             <template v-if="!currentUser">
               <div class="flex items-center gap-2">
                 <button class="icon-btn"><Heart :size="18" /></button>
