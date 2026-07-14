@@ -450,3 +450,7 @@ const passwordStrength = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* No custom CSS needed - all styles use Tailwind utility classes */
+</style>

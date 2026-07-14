@@ -26,7 +26,7 @@ const routes = [
   { path: '/products/:id', component: ProductDetail, name: 'product-detail' },
   { path: '/cart', component: Cart, name: 'Cart' },
   { path: '/checkout', component: Checkout, name: 'Checkout' },
-  { path: '/wishlist', component: Wishlist, name: 'Wishlist' },
+  { path: '/wishlist', component: Wishlist, name: 'Wishlist', alias: '/profile/wishlist' },
   { path: '/orders', component: OrderHistory, name: 'Orders' },
   { path: '/profile', component: Profile, name: 'Profile' },
   { path: '/login', component: Login, name: 'Login' },

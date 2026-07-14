@@ -58,7 +58,7 @@ const handleSocialLogin = (provider: 'google' | 'apple') => {
 
         <!-- Top badge -->
         <div class="relative z-10">
-          <span class="label-neutral font-mono text-[10px]">INDIGO E-COMMERCE</span>
+          <span class="label-neutral font-mono text-[10px]">MS E-COMMERCE</span>
         </div>
 
         <!-- Bottom copy -->
@@ -67,7 +67,7 @@ const handleSocialLogin = (provider: 'google' | 'apple') => {
             Elevate Your<br>Experience
           </h1>
           <p class="text-primary-200 text-sm leading-relaxed">
-            Join the Indigo community for exclusive access to premium collections and personalized shopping.
+            Join the MS community for exclusive access to premium collections and personalized shopping.
           </p>
           <!-- Feature pills -->
           <div class="flex flex-wrap gap-2 mt-6">

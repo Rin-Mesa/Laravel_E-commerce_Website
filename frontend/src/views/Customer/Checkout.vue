@@ -6,13 +6,11 @@ import { api } from '../../services/api';
 import {
   Lock,
   Truck,
-  Shield,
   CreditCard,
   MapPin,
-  Phone,
-  Mail,
-  User,
-  Check
+  ShoppingCart,
+  ShieldCheck,
+  RotateCcw,
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -20,7 +18,6 @@ const loading = ref(false);
 const processing = ref(false);
 
 const formData = ref({
-  // Shipping Info
   full_name: '',
   email: '',
   phone: '',
@@ -29,14 +26,10 @@ const formData = ref({
   state: '',
   zip_code: '',
   country: 'United States',
-
-  // Payment Info
   card_number: '',
   card_name: '',
   card_expiry: '',
   card_cvc: '',
-
-  // Additional
   save_address: false,
   same_as_shipping: true,
 });
@@ -51,7 +44,6 @@ const shipping = computed(() => subtotal.value >= 100 ? 0 : 9.99);
 const total = computed(() => subtotal.value + tax.value + shipping.value);
 
 onMounted(() => {
-  // Pre-fill with user data if available
   if (store.user.value) {
     formData.value.full_name = store.user.value.name || '';
     formData.value.email = store.user.value.email || '';
@@ -61,51 +53,22 @@ onMounted(() => {
 const validateForm = () => {
   errors.value = {};
 
-  if (!formData.value.full_name.trim()) {
-    errors.value.full_name = 'Full name is required';
-  }
+  if (!formData.value.full_name.trim()) errors.value.full_name = 'Full name is required';
+  if (!formData.value.email.trim()) errors.value.email = 'Email is required';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) errors.value.email = 'Enter a valid email';
 
-  if (!formData.value.email.trim()) {
-    errors.value.email = 'Email is required';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
-    errors.value.email = 'Please enter a valid email';
-  }
+  if (!formData.value.phone.trim()) errors.value.phone = 'Phone number is required';
+  if (!formData.value.address.trim()) errors.value.address = 'Address is required';
+  if (!formData.value.city.trim()) errors.value.city = 'City is required';
+  if (!formData.value.zip_code.trim()) errors.value.zip_code = 'ZIP code is required';
 
-  if (!formData.value.phone.trim()) {
-    errors.value.phone = 'Phone number is required';
-  }
+  if (!formData.value.card_number.trim()) errors.value.card_number = 'Card number is required';
+  else if (formData.value.card_number.replace(/\s/g, '').length < 16) errors.value.card_number = 'Invalid card number';
 
-  if (!formData.value.address.trim()) {
-    errors.value.address = 'Address is required';
-  }
-
-  if (!formData.value.city.trim()) {
-    errors.value.city = 'City is required';
-  }
-
-  if (!formData.value.zip_code.trim()) {
-    errors.value.zip_code = 'ZIP code is required';
-  }
-
-  if (!formData.value.card_number.trim()) {
-    errors.value.card_number = 'Card number is required';
-  } else if (formData.value.card_number.length < 16) {
-    errors.value.card_number = 'Invalid card number';
-  }
-
-  if (!formData.value.card_name.trim()) {
-    errors.value.card_name = 'Name on card is required';
-  }
-
-  if (!formData.value.card_expiry.trim()) {
-    errors.value.card_expiry = 'Expiry date is required';
-  }
-
-  if (!formData.value.card_cvc.trim()) {
-    errors.value.card_cvc = 'CVC is required';
-  } else if (formData.value.card_cvc.length < 3) {
-    errors.value.card_cvc = 'Invalid CVC';
-  }
+  if (!formData.value.card_name.trim()) errors.value.card_name = 'Name on card is required';
+  if (!formData.value.card_expiry.trim()) errors.value.card_expiry = 'Expiry date is required';
+  if (!formData.value.card_cvc.trim()) errors.value.card_cvc = 'CVC is required';
+  else if (formData.value.card_cvc.length < 3) errors.value.card_cvc = 'Invalid CVC';
 
   return Object.keys(errors.value).length === 0;
 };
@@ -117,9 +80,7 @@ const handleCheckout = async () => {
     return;
   }
 
-  if (!validateForm()) {
-    return;
-  }
+  if (!validateForm()) return;
 
   processing.value = true;
   try {
@@ -128,7 +89,6 @@ const handleCheckout = async () => {
       quantity: item.quantity,
     }));
 
-    // Backend expects: customer_name, phone, email, address, items
     const res = await api.post('/orders', {
       customer_name: formData.value.full_name,
       phone: formData.value.phone,
@@ -136,17 +96,13 @@ const handleCheckout = async () => {
       address: formData.value.address,
       items,
     });
+
     if (res.success) {
-      // Clear cart (use store actions so state + error handling stays consistent)
       for (const item of cart.value) {
-        if (!item?.id) {
-          throw new Error('Cart item id missing; cannot remove item from cart.');
-        }
+        if (!item?.id) throw new Error('Cart item id missing');
         await store.removeFromCart(item.id);
       }
       await store.fetchCart();
-
-
       store.setAlert('Order placed successfully! Thank you for shopping.', 'success');
       router.push('/');
     }
@@ -157,12 +113,8 @@ const handleCheckout = async () => {
   }
 };
 
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(val);
-};
+const formatCurrency = (val: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
 const formatCardNumber = (value: string) => {
   const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -172,215 +124,305 @@ const formatCardNumber = (value: string) => {
   for (let i = 0, len = match.length; i < len; i += 4) {
     parts.push(match.substring(i, i + 4));
   }
-  if (parts.length) {
-    return parts.join(' ');
-  } else {
-    return v;
-  }
+  return parts.length ? parts.join(' ') : v;
 };
 
 const formatExpiry = (value: string) => {
   const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-  if (v.length >= 2) {
-    return v.substring(0, 2) + '/' + v.substring(2, 4);
-  }
+  if (v.length >= 2) return v.substring(0, 2) + '/' + v.substring(2, 4);
   return v;
 };
 </script>
 
 <template>
-  <div class="checkout-wrapper">
-    <!-- Header -->
-    <div class="checkout-header">
-      <h1>Checkout</h1>
-      <p>Complete your order securely</p>
-    </div>
+  <div class="w-full bg-neutral-50 min-h-screen">
+    <div class="max-w-[1200px] mx-auto px-4 md:px-8 py-8 md:py-12">
 
-    <div v-if="cart.length === 0" class="empty-cart">
-      <ShoppingCart :size="48" class="empty-icon" />
-      <h3>Your cart is empty</h3>
-      <router-link to="/" class="btn btn-primary">Start Shopping</router-link>
-    </div>
-
-    <div v-else class="checkout-layout">
-      <!-- Left Column: Forms -->
-      <div class="checkout-forms">
-        <!-- Shipping Information -->
-        <div class="form-section card">
-          <div class="section-header">
-            <MapPin :size="20" />
-            <h2>Shipping Information</h2>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Full Name</label>
-              <input type="text" v-model="formData.full_name" :class="{ 'input-error': errors.full_name }"
-                @input="errors.full_name = ''" placeholder="John Doe" />
-              <span v-if="errors.full_name" class="error-text">{{ errors.full_name }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" v-model="formData.email" :class="{ 'input-error': errors.email }"
-                @input="errors.email = ''" placeholder="john@example.com" />
-              <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>Phone</label>
-              <input type="tel" v-model="formData.phone" :class="{ 'input-error': errors.phone }"
-                @input="errors.phone = ''" placeholder="+1 (555) 000-0000" />
-              <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
-            </div>
-
-            <div class="form-group full-width">
-              <label>Address</label>
-              <input type="text" v-model="formData.address" :class="{ 'input-error': errors.address }"
-                @input="errors.address = ''" placeholder="123 Main Street" />
-              <span v-if="errors.address" class="error-text">{{ errors.address }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>City</label>
-              <input type="text" v-model="formData.city" :class="{ 'input-error': errors.city }"
-                @input="errors.city = ''" placeholder="New York" />
-              <span v-if="errors.city" class="error-text">{{ errors.city }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>State</label>
-              <input type="text" v-model="formData.state" placeholder="NY" />
-            </div>
-
-            <div class="form-group">
-              <label>ZIP Code</label>
-              <input type="text" v-model="formData.zip_code" :class="{ 'input-error': errors.zip_code }"
-                @input="errors.zip_code = ''" placeholder="10001" />
-              <span v-if="errors.zip_code" class="error-text">{{ errors.zip_code }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>Country</label>
-              <select v-model="formData.country">
-                <option>United States</option>
-                <option>Canada</option>
-                <option>United Kingdom</option>
-              </select>
-            </div>
-          </div>
-
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="formData.save_address" />
-            <span>Save this address for future orders</span>
-          </label>
-        </div>
-
-        <!-- Payment Information -->
-        <div class="form-section card">
-          <div class="section-header">
-            <CreditCard :size="20" />
-            <h2>Payment Information</h2>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group full-width">
-              <label>Card Number</label>
-              <input type="text" v-model="formData.card_number" :class="{ 'input-error': errors.card_number }"
-                @input="formData.card_number = formatCardNumber(formData.card_number); errors.card_number = ''"
-                placeholder="1234 5678 9012 3456" maxlength="19" />
-              <span v-if="errors.card_number" class="error-text">{{ errors.card_number }}</span>
-            </div>
-
-            <div class="form-group full-width">
-              <label>Name on Card</label>
-              <input type="text" v-model="formData.card_name" :class="{ 'input-error': errors.card_name }"
-                @input="errors.card_name = ''" placeholder="JOHN DOE" />
-              <span v-if="errors.card_name" class="error-text">{{ errors.card_name }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>Expiry Date</label>
-              <input type="text" v-model="formData.card_expiry" :class="{ 'input-error': errors.card_expiry }"
-                @input="formData.card_expiry = formatExpiry(formData.card_expiry); errors.card_expiry = ''"
-                placeholder="MM/YY" maxlength="5" />
-              <span v-if="errors.card_expiry" class="error-text">{{ errors.card_expiry }}</span>
-            </div>
-
-            <div class="form-group">
-              <label>CVC</label>
-              <input type="text" v-model="formData.card_cvc" :class="{ 'input-error': errors.card_cvc }"
-                @input="errors.card_cvc = ''" placeholder="123" maxlength="4" />
-              <span v-if="errors.card_cvc" class="error-text">{{ errors.card_cvc }}</span>
-            </div>
-          </div>
-
-          <div class="secure-notice">
-            <Lock :size="14" />
-            <span>Your payment information is encrypted and secure</span>
-          </div>
-        </div>
+      <!-- ── Breadcrumb ── -->
+      <div class="flex items-center gap-2 text-xs font-mono text-neutral-400 mb-6">
+        <router-link to="/" class="hover:text-primary-600 transition-colors">Home</router-link>
+        <span>/</span>
+        <router-link to="/cart" class="hover:text-primary-600 transition-colors">Cart</router-link>
+        <span>/</span>
+        <span class="text-neutral-700 font-semibold">Checkout</span>
       </div>
 
-      <!-- Right Column: Order Summary -->
-      <div class="checkout-summary">
-        <div class="summary-card card">
-          <h2>Order Summary</h2>
+      <!-- ── Header ── -->
+      <div class="mb-8">
+        <p class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Secure checkout</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-neutral-900">Checkout</h1>
+        <p class="text-sm text-neutral-500 mt-1">Complete your order securely</p>
+      </div>
 
-          <div class="order-items">
-            <div v-for="item in cart" :key="item.id" class="order-item">
-              <img :src="item.product?.image_url" :alt="item.product?.name" class="order-item-img"
-                @error="($event.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=100&auto=format&fit=crop'" />
-              <div class="order-item-info">
-                <h4>{{ item.product?.name }}</h4>
-                <span class="order-item-qty">Qty: {{ item.quantity }}</span>
+      <!-- ── Empty Cart ── -->
+      <div
+        v-if="cart.length === 0"
+        class="bg-white border border-neutral-200 rounded-2xl p-16 flex flex-col items-center text-center shadow-sm"
+      >
+        <div class="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-5">
+          <ShoppingCart :size="32" class="text-neutral-400" />
+        </div>
+        <h2 class="text-xl font-bold text-neutral-900 mb-2">Your cart is empty</h2>
+        <p class="text-neutral-500 text-sm mb-6 max-w-xs">Add some items to your cart before checking out.</p>
+        <router-link to="/products" class="btn-primary px-8 py-3 no-underline">Browse Products</router-link>
+      </div>
+
+      <!-- ── Checkout Layout ── -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+        <!-- ════════ Left Column: Forms ════════ -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+
+          <!-- ── Shipping Information ── -->
+          <div class="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-5 border-b border-neutral-100">
+              <div class="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center">
+                <MapPin :size="17" class="text-primary-600" />
               </div>
-              <span class="order-item-price">{{ formatCurrency((item.product?.price || 0) * item.quantity) }}</span>
+              <div>
+                <h2 class="font-bold text-neutral-900 text-lg">Shipping Information</h2>
+                <p class="text-neutral-500 text-sm mt-0.5">Where should we deliver your order?</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text" v-model="formData.full_name"
+                  :class="['input-field', errors.full_name ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.full_name = ''" placeholder="John Doe"
+                />
+                <span v-if="errors.full_name" class="text-xs text-red-500 font-mono">{{ errors.full_name }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Email</label>
+                <input
+                  type="email" v-model="formData.email"
+                  :class="['input-field', errors.email ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.email = ''" placeholder="john@example.com"
+                />
+                <span v-if="errors.email" class="text-xs text-red-500 font-mono">{{ errors.email }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Phone</label>
+                <input
+                  type="tel" v-model="formData.phone"
+                  :class="['input-field', errors.phone ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.phone = ''" placeholder="+1 (555) 000-0000"
+                />
+                <span v-if="errors.phone" class="text-xs text-red-500 font-mono">{{ errors.phone }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Address</label>
+                <input
+                  type="text" v-model="formData.address"
+                  :class="['input-field', errors.address ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.address = ''" placeholder="123 Main Street"
+                />
+                <span v-if="errors.address" class="text-xs text-red-500 font-mono">{{ errors.address }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">City</label>
+                <input
+                  type="text" v-model="formData.city"
+                  :class="['input-field', errors.city ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.city = ''" placeholder="New York"
+                />
+                <span v-if="errors.city" class="text-xs text-red-500 font-mono">{{ errors.city }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">State</label>
+                <input
+                  type="text" v-model="formData.state"
+                  class="input-field" placeholder="NY"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">ZIP Code</label>
+                <input
+                  type="text" v-model="formData.zip_code"
+                  :class="['input-field', errors.zip_code ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.zip_code = ''" placeholder="10001"
+                />
+                <span v-if="errors.zip_code" class="text-xs text-red-500 font-mono">{{ errors.zip_code }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Country</label>
+                <select v-model="formData.country" class="input-field">
+                  <option>United States</option>
+                  <option>Canada</option>
+                  <option>United Kingdom</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Save address -->
+            <label class="flex items-center gap-2 mt-5 text-sm text-neutral-600 cursor-pointer">
+              <input
+                type="checkbox" v-model="formData.save_address"
+                class="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span>Save this address for future orders</span>
+            </label>
+          </div>
+
+          <!-- ── Payment Information ── -->
+          <div class="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-5 border-b border-neutral-100">
+              <div class="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center">
+                <CreditCard :size="17" class="text-primary-600" />
+              </div>
+              <div>
+                <h2 class="font-bold text-neutral-900 text-lg">Payment Information</h2>
+                <p class="text-neutral-500 text-sm mt-0.5">Enter your card details to complete the purchase</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-5">
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Card Number</label>
+                <input
+                  type="text" v-model="formData.card_number"
+                  :class="['input-field font-mono text-sm tracking-wider', errors.card_number ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="formData.card_number = formatCardNumber(formData.card_number); errors.card_number = ''"
+                  placeholder="1234 5678 9012 3456" maxlength="19"
+                />
+                <span v-if="errors.card_number" class="text-xs text-red-500 font-mono">{{ errors.card_number }}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Name on Card</label>
+                <input
+                  type="text" v-model="formData.card_name"
+                  :class="['input-field', errors.card_name ? '!border-red-400 !ring-red-400/20' : '']"
+                  @input="errors.card_name = ''" placeholder="JOHN DOE"
+                />
+                <span v-if="errors.card_name" class="text-xs text-red-500 font-mono">{{ errors.card_name }}</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1.5">
+                  <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Expiry Date</label>
+                  <input
+                    type="text" v-model="formData.card_expiry"
+                    :class="['input-field', errors.card_expiry ? '!border-red-400 !ring-red-400/20' : '']"
+                    @input="formData.card_expiry = formatExpiry(formData.card_expiry); errors.card_expiry = ''"
+                    placeholder="MM/YY" maxlength="5"
+                  />
+                  <span v-if="errors.card_expiry" class="text-xs text-red-500 font-mono">{{ errors.card_expiry }}</span>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label class="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-wider">CVC</label>
+                  <input
+                    type="text" v-model="formData.card_cvc"
+                    :class="['input-field', errors.card_cvc ? '!border-red-400 !ring-red-400/20' : '']"
+                    @input="errors.card_cvc = ''" placeholder="123" maxlength="4"
+                  />
+                  <span v-if="errors.card_cvc" class="text-xs text-red-500 font-mono">{{ errors.card_cvc }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 mt-5 pt-4 border-t border-neutral-100 text-sm text-neutral-500">
+              <Lock :size="14" class="text-secondary-500 shrink-0" />
+              <span>Your payment information is encrypted and secure</span>
             </div>
           </div>
+        </div>
 
-          <div class="summary-divider"></div>
+        <!-- ════════ Right Column: Order Summary ════════ -->
+        <div class="flex flex-col gap-5">
+          <div class="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 sticky top-24">
 
-          <div class="summary-row">
-            <span>Subtotal</span>
-            <span>{{ formatCurrency(subtotal) }}</span>
-          </div>
+            <h2 class="font-bold text-lg text-neutral-900 mb-5">Order Summary</h2>
 
-          <div class="summary-row">
-            <span>Shipping</span>
-            <span>{{ shipping === 0 ? 'Free' : formatCurrency(shipping) }}</span>
-          </div>
-
-          <div class="summary-row">
-            <span>Tax (8%)</span>
-            <span>{{ formatCurrency(tax) }}</span>
-          </div>
-
-          <div class="summary-divider"></div>
-
-          <div class="summary-row total">
-            <span>Total</span>
-            <span>{{ formatCurrency(total) }}</span>
-          </div>
-
-          <button class="btn btn-primary checkout-btn" @click="handleCheckout" :disabled="processing">
-            <Lock :size="16" v-if="!processing" />
-            <span v-if="processing">Processing...</span>
-            <span v-else>Place Order</span>
-          </button>
-
-          <div class="trust-badges">
-            <div class="trust-badge">
-              <Shield :size="14" />
-              <span>Secure Checkout</span>
+            <!-- Cart items -->
+            <div class="space-y-4 mb-6">
+              <div
+                v-for="item in cart"
+                :key="item.id"
+                class="flex gap-3"
+              >
+                <img
+                  :src="item.product?.image_url"
+                  :alt="item.product?.name"
+                  class="w-16 h-16 object-cover rounded-xl bg-neutral-100 shrink-0"
+                  @error="($event.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=100&auto=format&fit=crop'"
+                />
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-neutral-900 text-sm leading-snug truncate">
+                    {{ item.product?.name }}
+                  </h4>
+                  <p class="font-mono text-[10px] text-neutral-400 mt-0.5">Qty: {{ item.quantity }}</p>
+                </div>
+                <span class="font-semibold text-neutral-900 text-sm whitespace-nowrap">
+                  {{ formatCurrency((item.product?.price || 0) * item.quantity) }}
+                </span>
+              </div>
             </div>
-            <div class="trust-badge">
-              <Truck :size="14" />
-              <span>Free Shipping</span>
+
+            <!-- Totals -->
+            <div class="border-t border-neutral-200 pt-4 flex flex-col gap-3 text-sm">
+              <div class="flex justify-between text-neutral-600">
+                <span>Subtotal</span>
+                <span class="font-semibold text-neutral-900">{{ formatCurrency(subtotal) }}</span>
+              </div>
+              <div class="flex justify-between text-neutral-600">
+                <span>Shipping</span>
+                <span :class="shipping === 0 ? 'text-secondary-600 font-semibold' : 'font-semibold text-neutral-900'">
+                  {{ shipping === 0 ? 'Free' : formatCurrency(shipping) }}
+                </span>
+              </div>
+              <div class="flex justify-between text-neutral-600">
+                <span>Tax (8%)</span>
+                <span class="font-semibold text-neutral-900">{{ formatCurrency(tax) }}</span>
+              </div>
             </div>
-            <div class="trust-badge">
-              <Check :size="14" />
-              <span>30-Day Returns</span>
+
+            <div class="my-4 h-px bg-neutral-200"></div>
+
+            <div class="flex justify-between items-center mb-6">
+              <span class="font-bold text-neutral-900 text-base">Total</span>
+              <span class="font-bold text-xl text-neutral-900">{{ formatCurrency(total) }}</span>
+            </div>
+
+            <!-- Place Order button -->
+            <button
+              class="btn-primary w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleCheckout"
+              :disabled="processing"
+            >
+              <Lock :size="15" v-if="!processing" />
+              <span v-if="processing" class="flex items-center gap-2">
+                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Processing...
+              </span>
+              <span v-else>Place Order</span>
+            </button>
+
+            <!-- Trust badges -->
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <div class="flex items-center gap-1.5 bg-neutral-50 rounded-lg px-2 py-2.5 justify-center">
+                <ShieldCheck :size="13" class="text-secondary-500 shrink-0" />
+                <span class="font-mono text-[10px] text-neutral-500 font-semibold">Secure</span>
+              </div>
+              <div class="flex items-center gap-1.5 bg-neutral-50 rounded-lg px-2 py-2.5 justify-center">
+                <Truck :size="13" class="text-secondary-500 shrink-0" />
+                <span class="font-mono text-[10px] text-neutral-500 font-semibold">Free Ship</span>
+              </div>
+              <div class="flex items-center gap-1.5 bg-neutral-50 rounded-lg px-2 py-2.5 justify-center">
+                <RotateCcw :size="13" class="text-secondary-500 shrink-0" />
+                <span class="font-mono text-[10px] text-neutral-500 font-semibold">Returns</span>
+              </div>
             </div>
           </div>
         </div>
@@ -390,311 +432,5 @@ const formatExpiry = (value: string) => {
 </template>
 
 <style scoped>
-.checkout-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: var(--font-body);
-  background-color: #05070c;
-  color: #f3f4f6;
-  min-height: 80vh;
-}
-
-.checkout-header {
-  margin-bottom: 40px;
-}
-
-.checkout-header h1 {
-  font-family: var(--font-display);
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: white;
-  margin-bottom: 8px;
-}
-
-.checkout-header p {
-  font-size: 0.9rem;
-  color: #9ca3af;
-}
-
-.empty-cart {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0;
-  gap: 16px;
-  color: #6b7280;
-}
-
-.empty-icon {
-  color: #1f2937;
-}
-
-.checkout-layout {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 32px;
-}
-
-@media (max-width: 1024px) {
-  .checkout-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Form Sections */
-.checkout-forms {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.form-section {
-  padding: 32px;
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.section-header h2 {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: white;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group.full-width {
-  grid-column: span 2;
-}
-
-@media (max-width: 640px) {
-  .form-group.full-width {
-    grid-column: span 1;
-  }
-}
-
-.form-group label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.form-group input,
-.form-group select {
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  transition: border-color var(--transition-fast);
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.input-error {
-  border-color: #ef4444 !important;
-}
-
-.input-error:focus {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
-}
-
-.error-text {
-  color: #f87171;
-  font-size: 0.75rem;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #9ca3af;
-  cursor: pointer;
-  margin-top: 16px;
-}
-
-.checkbox-label input {
-  width: 16px;
-  height: 16px;
-  accent-color: #3b82f6;
-}
-
-.secure-notice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding: 12px 16px;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  color: #10b981;
-}
-
-/* Summary Card */
-.checkout-summary {
-  position: sticky;
-  top: 40px;
-  height: fit-content;
-}
-
-.summary-card {
-  padding: 32px;
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.summary-card h2 {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: white;
-  margin-bottom: 24px;
-}
-
-.order-items {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.order-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.order-item-img {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-sm);
-  object-fit: contain;
-  background: #0b0f19;
-  padding: 8px;
-}
-
-.order-item-info {
-  flex: 1;
-}
-
-.order-item-info h4 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: white;
-  margin-bottom: 4px;
-}
-
-.order-item-qty {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.order-item-price {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: white;
-}
-
-.summary-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.05);
-  margin: 16px 0;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: #9ca3af;
-  margin-bottom: 12px;
-}
-
-.summary-row.total {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: white;
-  margin-top: 16px;
-}
-
-.checkout-btn {
-  width: 100%;
-  padding: 14px;
-  margin-top: 24px;
-  font-size: 1rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.trust-badges {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.trust-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.trust-badge svg {
-  color: #10b981;
-}
-
-@media (max-width: 768px) {
-  .checkout-wrapper {
-    padding: 24px;
-  }
-
-  .form-section,
-  .summary-card {
-    padding: 24px;
-  }
-}
+/* All styles use Tailwind utility classes via the project's design system */
 </style>

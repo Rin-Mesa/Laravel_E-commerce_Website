@@ -2,26 +2,32 @@
 import { ref, onMounted, computed } from 'vue';
 import { store } from '../../store';
 import { api } from '../../services/api';
-import { ShoppingCart, Trash2, ShoppingBag, Heart } from 'lucide-vue-next';
+import { ShoppingCart, Trash2, ShoppingBag, Heart, LogOut, User } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const loading = ref(true);
 
 const fetchWishlist = async () => {
   loading.value = true;
   try {
     await store.fetchWishlist();
-  } catch (err) {
-    console.error('Failed to load wishlist items', err);
+  } catch {
+    // silently fail
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(async () => {
-  await fetchWishlist();
-});
+onMounted(fetchWishlist);
 
 const wishlist = computed(() => store.wishlist.value);
+const currentUser = computed(() => store.user.value);
+
+const initials = computed(() => {
+  const name = currentUser.value?.name || 'U';
+  return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+});
 
 const handleAddToCart = async (productId: number) => {
   await store.addToCart(productId, 1);
@@ -32,9 +38,9 @@ const handleRemoveFromWishlist = async (wishlistId: number) => {
   try {
     await api.removeFromWishlist(wishlistId);
     await store.fetchWishlist();
-    store.setAlert('Removed item from wishlist', 'success');
+    store.setAlert('Removed from wishlist', 'success');
   } catch (err: any) {
-    store.setAlert(err.message || 'Failed to remove wishlist item', 'error');
+    store.setAlert(err.message || 'Failed to remove item', 'error');
   } finally {
     loading.value = false;
   }
@@ -44,24 +50,14 @@ const handleMoveAllToCart = async () => {
   if (wishlist.value.length === 0) return;
   loading.value = true;
   try {
-    // Add all products to cart
     for (const item of wishlist.value) {
-      if (item.product_id) {
-        await api.addToCart(item.product_id, 1);
-      }
+      if (item.product_id) await api.addToCart(item.product_id, 1);
     }
-    
-    // Clear wishlist
     for (const item of wishlist.value) {
       await api.removeFromWishlist(item.id);
     }
-    
-    await Promise.all([
-      store.fetchCart(),
-      store.fetchWishlist()
-    ]);
-    
-    store.setAlert('Moved all items to your shopping cart', 'success');
+    await Promise.all([store.fetchCart(), store.fetchWishlist()]);
+    store.setAlert('Moved all items to cart', 'success');
   } catch (err: any) {
     store.setAlert(err.message || 'Failed to move items', 'error');
   } finally {
@@ -69,298 +65,139 @@ const handleMoveAllToCart = async () => {
   }
 };
 
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(val);
+const handleLogout = async () => {
+  await store.logout();
+  router.push('/login');
 };
+
+const formatCurrency = (val: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 </script>
 
 <template>
-  <div class="wishlist-wrapper">
-    <!-- Wishlist list area -->
-    <div class="wishlist-content-card card animate-fade-in-up">
-      <div class="wishlist-content-header">
-        <div>
-          <h3>Your Wishlist</h3>
-          <p v-if="wishlist.length > 0">
-            You have {{ wishlist.length }} items saved for later.
-          </p>
-          <p v-else>Your wishlist is currently empty.</p>
+  <div class="w-full bg-neutral-50 min-h-screen">
+    <div class="max-w-[1100px] mx-auto px-4 md:px-8 py-8 md:py-12">
+
+      <div class="mb-8">
+        <p class="font-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Account</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-neutral-900">My Wishlist</h1>
+      </div>
+
+      <!-- Hero Banner -->
+      <div class="relative bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 rounded-2xl p-6 md:p-8 mb-8 overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-48 h-48 bg-white/5 rounded-full pointer-events-none"></div>
+        <div class="absolute -bottom-12 -left-8 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
+        <div class="absolute top-1/2 right-1/4 w-32 h-32 bg-secondary-500/10 rounded-full blur-xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div class="relative shrink-0">
+            <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg">
+              <span class="text-white font-bold text-2xl font-mono">{{ initials }}</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-bold text-white truncate">{{ currentUser?.name || 'User' }}</h2>
+            <p class="text-rose-200 text-sm mt-0.5 truncate">{{ currentUser?.email || '' }}</p>
+            <div class="flex items-center gap-3 mt-3 flex-wrap">
+              <span class="bg-white/15 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full border border-white/20 uppercase tracking-wider">
+                {{ wishlist.length }} saved {{ wishlist.length === 1 ? 'item' : 'items' }}
+              </span>
+              <span class="bg-secondary-500/20 text-secondary-200 text-[10px] font-mono font-bold px-3 py-1 rounded-full border border-secondary-400/30 uppercase tracking-wider">
+                {{ currentUser?.role || 'customer' }}
+              </span>
+            </div>
+          </div>
+          <button
+            @click="handleLogout"
+            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg border border-white/20 transition-colors shrink-0 cursor-pointer"
+          >
+            <LogOut :size="15" />
+            Logout
+          </button>
         </div>
-        
-        <button 
-          v-if="wishlist.length > 0" 
-          class="btn btn-primary" 
-          @click="handleMoveAllToCart"
-          :disabled="loading"
-        >
-          <ShoppingBag :size="16" />
-          Move All to Cart
-        </button>
       </div>
 
-      <!-- Loading state -->
-      <div v-if="loading && wishlist.length === 0" class="wishlist-loading">
-        <div class="loader"></div>
-        <p>Loading your saved items...</p>
+      <!-- Loading -->
+      <div v-if="loading && wishlist.length === 0" class="flex flex-col items-center py-24 gap-4 text-neutral-400">
+        <div class="w-10 h-10 border-4 border-neutral-200 border-t-primary-600 rounded-full animate-spin"></div>
+        <p class="text-sm">Loading your saved items...</p>
       </div>
 
-      <!-- Empty state -->
-      <div v-else-if="wishlist.length === 0" class="wishlist-empty">
-        <Heart :size="48" class="heart-empty-icon" />
-        <p>Browse products and click the heart icon to save them here.</p>
-        <router-link to="/" class="btn btn-secondary btn-sm">
-          Go Shopping
+      <!-- Empty -->
+      <div v-else-if="wishlist.length === 0" class="bg-white border border-neutral-200 rounded-2xl shadow-sm p-16 text-center">
+        <Heart :size="48" class="text-neutral-300 mx-auto mb-4" />
+        <h3 class="text-lg font-bold text-neutral-700 mb-2">Your wishlist is empty</h3>
+        <p class="text-neutral-500 text-sm mb-6">Browse products and tap the heart icon to save your favorites.</p>
+        <router-link to="/products" class="btn-primary inline-flex items-center gap-2 py-2.5 px-6 text-sm rounded-lg no-underline">
+          <ShoppingBag :size="15" />
+          Browse Products
         </router-link>
       </div>
 
-      <!-- Wishlist grid -->
-      <div v-else class="wishlist-grid">
-        <div v-for="item in wishlist" :key="item.id" class="wishlist-item-card">
-          <button class="remove-wishlist-btn" @click="handleRemoveFromWishlist(item.id)">
-            <Trash2 :size="16" />
+      <!-- Wishlist Grid -->
+      <template v-else>
+        <div class="flex items-center justify-between mb-6">
+          <p class="text-sm text-neutral-500">
+            Showing <strong class="text-neutral-700">{{ wishlist.length }}</strong> {{ wishlist.length === 1 ? 'item' : 'items' }}
+          </p>
+          <button
+            @click="handleMoveAllToCart"
+            :disabled="loading"
+            class="btn-primary text-sm py-2 px-4 flex items-center gap-2 cursor-pointer"
+          >
+            <ShoppingBag :size="15" />
+            Move All to Cart
           </button>
-          
-          <div class="wishlist-card-image-box">
-            <img 
-              :src="item.product?.image_url" 
-              :alt="item.product?.name" 
-              class="wishlist-card-img"
-              @error="($event.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=256&auto=format&fit=crop'"
-            />
-          </div>
+        </div>
 
-          <div class="wishlist-card-info">
-            <div class="wishlist-card-name-price">
-              <h4 class="wishlist-item-name">{{ item.product?.name }}</h4>
-              <span class="wishlist-item-price">{{ formatCurrency(item.product?.price || 0) }}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div
+            v-for="item in wishlist"
+            :key="item.id"
+            class="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden group transition-all hover:shadow-lg hover:-translate-y-0.5"
+          >
+            <div class="relative bg-neutral-50 h-44 flex items-center justify-center p-6">
+              <img
+                :src="item.product?.image_url"
+                :alt="item.product?.name"
+                class="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                @error="($event.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=256&auto=format&fit=crop'"
+              />
+              <button
+                @click="handleRemoveFromWishlist(item.id)"
+                class="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm border border-neutral-200 rounded-full flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm cursor-pointer"
+                title="Remove"
+              >
+                <Trash2 :size="14" />
+              </button>
             </div>
-            
-            <p class="wishlist-item-desc">
-              {{ item.product?.description || 'Ultra-responsive features tailored for professionals.' }}
-            </p>
-            
-            <button class="btn btn-secondary btn-sm add-cart-btn-full" @click="handleAddToCart(item.product_id)">
-              <ShoppingCart :size="14" />
-              Add to Cart
-            </button>
+
+            <div class="p-5 flex flex-col gap-3">
+              <div class="flex justify-between items-start gap-3">
+                <h4 class="font-semibold text-neutral-900 text-sm leading-snug line-clamp-2">
+                  {{ item.product?.name }}
+                </h4>
+                <span class="font-bold text-primary-600 whitespace-nowrap text-sm">
+                  {{ formatCurrency(item.product?.price || 0) }}
+                </span>
+              </div>
+
+              <p class="text-xs text-neutral-500 leading-relaxed line-clamp-2">
+                {{ item.product?.description || 'Premium product designed for quality and performance.' }}
+              </p>
+
+              <button
+                @click="handleAddToCart(item.product_id)"
+                class="w-full mt-1 btn-primary text-xs py-2.5 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ShoppingCart :size="14" />
+                Add to Cart
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
+
     </div>
   </div>
 </template>
-
-<style scoped>
-.wishlist-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  font-family: var(--font-body);
-}
-
-/* Profile header summary */
-.profile-summary-header {
-  background: linear-gradient(135deg, #111827 0%, #1e1b4b 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-xl);
-  padding: 32px 40px;
-}
-
-.profile-details-box {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.profile-main-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  object-fit: cover;
-}
-
-.profile-meta h2 {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: white;
-  margin-bottom: 4px;
-}
-
-.user-role-badge {
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  color: #3b82f6;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 50px;
-}
-
-/* Wishlist Content Card */
-.wishlist-content-card {
-  padding: 32px;
-  background-color: #111827;
-  border-color: rgba(255, 255, 255, 0.05);
-}
-
-.wishlist-content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 20px;
-}
-
-.wishlist-content-header h3 {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: white;
-}
-
-.wishlist-content-header p {
-  font-size: 0.85rem;
-  color: #9ca3af;
-  margin-top: 4px;
-}
-
-.wishlist-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-@media (max-width: 1200px) {
-  .wishlist-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .wishlist-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.wishlist-item-card {
-  background-color: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.remove-wishlist-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: rgba(17, 24, 39, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ef4444;
-  cursor: pointer;
-  z-index: 10;
-  transition: all var(--transition-fast);
-}
-
-.remove-wishlist-btn:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
-.wishlist-card-image-box {
-  background-color: #111827;
-  height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.wishlist-card-img {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
-}
-
-.wishlist-card-info {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-
-.wishlist-card-name-price {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.wishlist-item-name {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-  line-height: 1.3;
-}
-
-.wishlist-item-price {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  color: #3b82f6;
-  white-space: nowrap;
-}
-
-.wishlist-item-desc {
-  font-size: 0.8rem;
-  color: #9ca3af;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.add-cart-btn-full {
-  width: 100%;
-  margin-top: auto;
-  border-color: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
-}
-
-.add-cart-btn-full:hover {
-  background-color: #2563eb;
-  color: white;
-}
-
-.wishlist-loading, .wishlist-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 0;
-  gap: 16px;
-  color: #6b7280;
-}
-
-.heart-empty-icon {
-  color: #1f2937;
-}
-</style>
